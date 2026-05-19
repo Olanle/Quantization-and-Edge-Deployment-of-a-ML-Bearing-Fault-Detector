@@ -1,0 +1,1 @@
+# Quantization-and-Edge-Deployment-of-a-ML-Bearing-Fault-Detector
