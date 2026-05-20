@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bearing Fault Detector</title>
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0d1117;
+      color: #c9d1d9;
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    header {
+      text-align: center;
+      padding: 20px 0 30px;
+      border-bottom: 1px solid #21262d;
+      margin-bottom: 30px;
+    }
+    header h1 { color: #58a6ff; font-size: 1.6rem; letter-spacing: 2px; }
+    header p { color: #8b949e; font-size: 0.85rem; margin-top: 6px; }
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .panel {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .panel h2 {
+      color: #58a6ff;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #21262d;
+      padding-bottom: 8px;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 10px;
+    }
+    .slider-row label {
+      width: 80px;
+      font-size: 0.78rem;
+      color: #8b949e;
+    }
+    .slider-row input[type=range] {
+      flex: 1;
+      accent-color: #58a6ff;
+    }
+    .slider-row span {
+      width: 55px;
+      text-align: right;
+      font-size: 0.78rem;
+      color: #e6edf3;
+    }
+    .btn {
+      width: 100%;
+      padding: 10px;
+      margin-top: 14px;
+      background: #1f6feb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #388bfd; }
+    .btn.secondary {
+      background: #21262d;
+      border: 1px solid #30363d;
+      margin-top: 8px;
+    }
+    .btn.secondary:hover { background: #30363d; }
+    .result-box {
+      text-align: center;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      border: 2px solid #21262d;
+      transition: all 0.3s;
+    }
+    .result-box.normal { border-color: #238636; background: #0d1f0f; }
+    .result-box.anomaly { border-color: #da3633; background: #1f0d0d; }
+    .result-label {
+      font-size: 1.8rem;
+      font-weight: bold;
+      letter-spacing: 3px;
+    }
+    .normal .result-label { color: #3fb950; }
+    .anomaly .result-label { color: #f85149; }
+    .result-sub { font-size: 0.78rem; color: #8b949e; margin-top: 4px; }
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      background: #0d1117;
+      border-radius: 4px;
+    }
+    .metric-row .label { color: #8b949e; }
+    .metric-row .value { color: #e6edf3; }
+    .confidence-bar-bg {
+      background: #21262d;
+      border-radius: 4px;
+      height: 8px;
+      margin: 10px 0 16px;
+      overflow: hidden;
+    }
+    .confidence-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: #238636;
+      transition: width 0.4s ease;
+    }
+    .anomaly-fill { background: #da3633; }
+    .log-entry {
+      font-size: 0.72rem;
+      padding: 5px 8px;
+      border-bottom: 1px solid #21262d;
+      display: flex;
+      justify-content: space-between;
+    }
+    .log-entry:last-child { border-bottom: none; }
+    .log-normal { color: #3fb950; }
+    .log-anomaly { color: #f85149; }
+    .log-time { color: #8b949e; }
+    .upload-area {
+      border: 2px dashed #30363d;
+      border-radius: 6px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      margin-bottom: 10px;
+    }
+    .upload-area:hover { border-color: #58a6ff; }
+    .upload-area p { color: #8b949e; font-size: 0.8rem; }
+    .upload-area .icon { font-size: 1.8rem; margin-bottom: 6px; }
+    #fileInput { display: none; }
+    .threshold-info {
+      font-size: 0.72rem;
+      color: #8b949e;
+      padding: 8px 10px;
+      background: #0d1117;
+      border-radius: 4px;
+      margin-top: 8px;
+    }
+    .tab-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .tab {
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      border-radius: 4px;
+      cursor: pointer;
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #8b949e;
+      font-family: 'Courier New', monospace;
+    }
+    .tab.active {
+      background: #1f6feb;
+      border-color: #1f6feb;
+      color: white;
+    }
+    #sliderMode, #uploadMode { display: block; }
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+      background: #da3633;
+    }
+    .status-dot.loaded { background: #3fb950; }
+    .model-status {
+      font-size: 0.72rem;
+      color: #8b949e;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⚙ BEARING FAULT DETECTOR</h1>
+    <p>Autoencoder-based anomaly detection · CWRU Dataset · ONNX Runtime Web</p>
+  </header>
+
+  <div class="layout">
+    <!-- LEFT PANEL: Input -->
+    <div class="panel">
+      <h2>Input</h2>
+      <div class="model-status">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Loading model...</span>
+      </div>
+
+      <div class="tab-row">
+        <div class="tab active" onclick="switchTab('sliders')">Sensor Sliders</div>
+        <div class="tab" onclick="switchTab('upload')">CSV Upload</div>
+      </div>
+
+      <!-- Slider Mode -->
+      <div id="sliderMode">
+        <div class="slider-row">
+          <label>max</label>
+          <input type="range" id="s_max" min="-5" max="5" step="0.01" value="0.21" oninput="updateVal('max',this.value)">
+          <span id="v_max">0.21</span>
+        </div>
+        <div class="slider-row">
+          <label>min</label>
+          <input type="range" id="s_min" min="-5" max="5" step="0.01" value="-0.20" oninput="updateVal('min',this.value)">
+          <span id="v_min">-0.20</span>
+        </div>
+        <div class="slider-row">
+          <label>mean</label>
+          <input type="range" id="s_mean" min="-2" max="2" step="0.001" value="0.01" oninput="updateVal('mean',this.value)">
+          <span id="v_mean">0.01</span>
+        </div>
+        <div class="slider-row">
+          <label>sd</label>
+          <input type="range" id="s_sd" min="0" max="2" step="0.001" value="0.065" oninput="updateVal('sd',this.value)">
+          <span id="v_sd">0.065</span>
+        </div>
+        <div class="slider-row">
+          <label>rms</label>
+          <input type="range" id="s_rms" min="0" max="2" step="0.001" value="0.066" oninput="updateVal('rms',this.value)">
+          <span id="v_rms">0.066</span>
+        </div>
+        <div class="slider-row">
+          <label>skewness</label>
+          <input type="range" id="s_skew" min="-3" max="3" step="0.01" value="-0.21" oninput="updateVal('skew',this.value)">
+          <span id="v_skew">-0.21</span>
+        </div>
+        <div class="slider-row">
+          <label>kurtosis</label>
+          <input type="range" id="s_kurt" min="-5" max="30" step="0.01" value="-0.12" oninput="updateVal('kurt',this.value)">
+          <span id="v_kurt">-0.12</span>
+        </div>
+        <div class="slider-row">
+          <label>crest</label>
+          <input type="range" id="s_crest" min="0" max="10" step="0.01" value="3.10" oninput="updateVal('crest',this.value)">
+          <span id="v_crest">3.10</span>
+        </div>
+        <div class="slider-row">
+          <label>form</label>
+          <input type="range" id="s_form" min="0" max="50" step="0.01" value="6.03" oninput="updateVal('form',this.value)">
+          <span id="v_form">6.03</span>
+        </div>
+        <button class="btn" onclick="runInference()">▶ RUN INFERENCE</button>
+        <button class="btn secondary" onclick="loadPreset('normal')">Load Normal Sample</button>
+        <button class="btn secondary" onclick="loadPreset('fault')">Load Fault Sample</button>
+      </div>
+
+      <!-- Upload Mode -->
+      <div id="uploadMode" style="display:none">
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+          <div class="icon">📂</div>
+          <p>Click to upload a CSV file</p>
+          <p>One row, 9 columns: max, min, mean, sd, rms, skewness, kurtosis, crest, form</p>
+        </div>
+        <input type="file" id="fileInput" accept=".csv" onchange="handleCSV(event)">
+        <div id="uploadPreview" style="font-size:0.75rem; color:#8b949e; margin-top:8px;"></div>
+        <button class="btn" onclick="runInference()" id="uploadRunBtn" disabled>▶ RUN INFERENCE</button>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: Results -->
+    <div class="panel">
+      <h2>Results</h2>
+
+      <div class="result-box" id="resultBox">
+        <div class="result-label" id="resultLabel">—</div>
+        <div class="result-sub" id="resultSub">Run inference to see prediction</div>
+      </div>
+
+      <div class="confidence-bar-bg">
+        <div class="confidence-bar-fill" id="confBar" style="width:0%"></div>
+      </div>
+
+      <div class="metric-row">
+        <span class="label">Reconstruction Error</span>
+        <span class="value" id="metricError">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="label">Threshold</span>
+        <span class="value" id="metricThreshold">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="label">Inference Latency</span>
+        <span class="value" id="metricLatency">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="label">Model Format</span>
+        <span class="value">ONNX Float32</span>
+      </div>
+      <div class="metric-row">
+        <span class="label">Model Size</span>
+        <span class="value">2.82 KB</span>
+      </div>
+
+      <div class="threshold-info" id="thresholdInfo">
+        Threshold = mean normal error + 2 × std · Set after loading model
+      </div>
+
+      <h2 style="margin-top:20px;">Run Log</h2>
+      <div id="runLog" style="max-height:180px; overflow-y:auto;">
+        <div class="log-entry"><span class="log-time">—</span><span>No runs yet</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let session = null;
+    let threshold = 1.8; // default threshold from Project 6
+    let uploadedInput = null;
+
+    // Normal sample values (from CWRU normal bearing)
+    const PRESETS = {
+      normal: [0.21425, -0.19839, 0.010769, 0.064100, 0.064983, -0.212497, -0.119312, 3.297037, 6.034174],
+      fault:  [2.75270, -2.86290, 0.014965, 0.418131, 0.418297, -0.553010, 12.676896, 6.580735, 27.951915]
+    };
+
+    const FIELDS = ['max','min','mean','sd','rms','skew','kurt','crest','form'];
+    const SLIDER_IDS = ['s_max','s_min','s_mean','s_sd','s_rms','s_skew','s_kurt','s_crest','s_form'];
+
+    async function loadModel() {
+      try {
+        session = await ort.InferenceSession.create('autoencoder.onnx');
+        document.getElementById('statusDot').classList.add('loaded');
+        document.getElementById('statusText').textContent = 'Model loaded · Ready';
+        computeThreshold();
+      } catch(e) {
+        document.getElementById('statusText').textContent = 'Model not found · Place autoencoder.onnx in same folder';
+      }
+    }
+
+    async function computeThreshold() {
+      // Use known threshold from Project 6 training
+      threshold = 1.8;
+      document.getElementById('metricThreshold').textContent = threshold.toFixed(4);
+      document.getElementById('thresholdInfo').textContent =
+        `Threshold: ${threshold.toFixed(4)} · Derived from mean + 2×std of normal validation errors`;
+    }
+
+    function updateVal(field, val) {
+      document.getElementById('v_' + field).textContent = parseFloat(val).toFixed(3);
+    }
+
+    function switchTab(mode) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      if (mode === 'sliders') {
+        document.getElementById('sliderMode').style.display = 'block';
+        document.getElementById('uploadMode').style.display = 'none';
+        document.querySelectorAll('.tab')[0].classList.add('active');
+      } else {
+        document.getElementById('sliderMode').style.display = 'none';
+        document.getElementById('uploadMode').style.display = 'block';
+        document.querySelectorAll('.tab')[1].classList.add('active');
+      }
+    }
+
+    function loadPreset(type) {
+      const vals = PRESETS[type];
+      SLIDER_IDS.forEach((id, i) => {
+        document.getElementById(id).value = vals[i];
+      });
+      FIELDS.forEach((f, i) => {
+        document.getElementById('v_' + f).textContent = parseFloat(vals[i]).toFixed(3);
+      });
+    }
+
+    function handleCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result.trim();
+        const lines = text.split('\n');
+        // Take last non-empty line (skip header if present)
+        let dataLine = lines[lines.length - 1];
+        const values = dataLine.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
+        if (values.length >= 9) {
+          uploadedInput = values.slice(0, 9);
+          document.getElementById('uploadPreview').textContent =
+            `Loaded: [${uploadedInput.map(v => v.toFixed(3)).join(', ')}]`;
+          document.getElementById('uploadRunBtn').disabled = false;
+        } else {
+          document.getElementById('uploadPreview').textContent =
+            `Error: Expected 9 values, got ${values.length}`;
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function getInputValues() {
+      const uploadVisible = document.getElementById('uploadMode').style.display !== 'none';
+      if (uploadVisible && uploadedInput) return uploadedInput;
+      return SLIDER_IDS.map(id => parseFloat(document.getElementById(id).value));
+    }
+
+    async function runInference() {
+      if (!session) {
+        alert('Model not loaded yet. Place autoencoder.onnx in the same folder as this HTML file.');
+        return;
+      }
+
+      const inputVals = getInputValues();
+      const inputTensor = new ort.Tensor('float32', new Float32Array(inputVals), [1, 9]);
+
+      const t0 = performance.now();
+      const results = await session.run({ x: inputTensor });
+      const t1 = performance.now();
+
+      const output = results['output'].data;
+      const input = inputTensor.data;
+
+      // Compute reconstruction error
+      let error = 0;
+      for (let i = 0; i < 9; i++) {
+        error += (input[i] - output[i]) ** 2;
+      }
+      error /= 9;
+
+      const latency = (t1 - t0).toFixed(3);
+      const isAnomaly = error > threshold;
+      const confidence = Math.min(100, (error / (threshold * 3)) * 100);
+
+      // Update result box
+      const box = document.getElementById('resultBox');
+      box.className = 'result-box ' + (isAnomaly ? 'anomaly' : 'normal');
+      document.getElementById('resultLabel').textContent = isAnomaly ? 'ANOMALY' : 'NORMAL';
+      document.getElementById('resultSub').textContent = isAnomaly
+        ? 'Bearing fault detected — inspect immediately'
+        : 'Bearing operating within normal parameters';
+
+      // Update metrics
+      document.getElementById('metricError').textContent = error.toFixed(4);
+      document.getElementById('metricLatency').textContent = latency + ' ms';
+
+      // Confidence bar
+      const bar = document.getElementById('confBar');
+      bar.style.width = Math.min(100, isAnomaly ? confidence : (100 - confidence)) + '%';
+      bar.className = 'confidence-bar-fill ' + (isAnomaly ? 'anomaly-fill' : '');
+
+      // Log entry
+      const log = document.getElementById('runLog');
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `
+        <span class="log-time">${time}</span>
+        <span class="${isAnomaly ? 'log-anomaly' : 'log-normal'}">${isAnomaly ? 'ANOMALY' : 'NORMAL'}</span>
+        <span>err: ${error.toFixed(4)}</span>
+        <span>${latency}ms</span>
+      `;
+      if (log.children[0]?.textContent.includes('No runs yet')) log.innerHTML = '';
+      log.insertBefore(entry, log.firstChild);
+      if (log.children.length > 20) log.removeChild(log.lastChild);
+    }
+
+    loadModel();
+  </script>
+</body>
+</html>
