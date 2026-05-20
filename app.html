@@ -335,7 +335,7 @@
 
     // Normal sample values (from CWRU normal bearing)
     const PRESETS = {
-      normal: [0.21425, -0.19839, 0.010769, 0.064100, 0.064983, -0.212497, -0.119312, 3.297037, 6.034174],
+      normal: [4.13025, -0.25023, 0.073129, 0.90223, 0.54623, 2.54044, 1.80000, 4.06322, 0.82045],
       fault:  [2.75270, -2.86290, 0.014965, 0.418131, 0.418297, -0.553010, 12.676896, 6.580735, 27.951915]
     };
 
@@ -349,7 +349,8 @@
         document.getElementById('statusText').textContent = 'Model loaded · Ready';
         computeThreshold();
       } catch(e) {
-        document.getElementById('statusText').textContent = 'Model not found · Place autoencoder.onnx in same folder';
+        console.error('Model load error:', e);
+        document.getElementById('statusText').textContent = 'Model load failed: ' + e.message;
       }
     }
 
