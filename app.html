@@ -277,6 +277,7 @@
 
       <!-- Slider Mode -->
       <div id="sliderMode">
+        <p style="font-size:0.7rem; color:#8b949e; margin-bottom:10px;">💡 Hover over any parameter label to see what it represent on real bearing system.</p>
 
         <!-- ADDED: Quick Simulation -->
         <div class="sim-box">
@@ -294,47 +295,47 @@
 
         <!-- Existing sliders with tooltips added to labels -->
         <div class="slider-row">
-          <label data-tip="Peak vibration amplitude. Normal bearings: 0.1–0.3. High values (>1.0) suggest impact events from fault.">max</label>
+          <label data-tip="Peak vibration amplitude.">max</label>
           <input type="range" id="s_max" min="-5" max="5" step="0.01" value="0.21" oninput="updateVal('max',this.value)">
           <span id="v_max">0.21</span>
         </div>
         <div class="slider-row">
-          <label data-tip="Lowest vibration amplitude recorded. Normal: -0.3 to -0.1. Large negatives indicate strong impact reversals.">min</label>
+          <label data-tip="Lowest vibration amplitude recorded.">min</label>
           <input type="range" id="s_min" min="-5" max="5" step="0.01" value="-0.20" oninput="updateVal('min',this.value)">
           <span id="v_min">-0.20</span>
         </div>
         <div class="slider-row">
-          <label data-tip="Average vibration level over the measurement window. Healthy bearings: near 0. Drift indicates a bias or alignment issue.">mean</label>
+          <label data-tip="Average vibration level over the measurement window.">mean</label>
           <input type="range" id="s_mean" min="-2" max="2" step="0.001" value="0.01" oninput="updateVal('mean',this.value)">
           <span id="v_mean">0.01</span>
         </div>
         <div class="slider-row">
-          <label data-tip="Standard deviation — measures how much vibration varies. Normal: 0.05–0.09. Higher values mean more irregular vibration, a common fault indicator.">sd</label>
+          <label data-tip="Standard deviation — measures how much vibration varies, a common fault indicator.">sd</label>
           <input type="range" id="s_sd" min="0" max="2" step="0.001" value="0.065" oninput="updateVal('sd',this.value)">
           <span id="v_sd">0.065</span>
         </div>
         <div class="slider-row">
-          <label data-tip="Root Mean Square — overall energy of the vibration signal. Normal: 0.06–0.09. Rising RMS is an early warning of bearing wear.">rms</label>
+          <label data-tip="Root Mean Square — overall energy of the vibration signal. Rising RMS is an early warning of bearing wear.">rms</label>
           <input type="range" id="s_rms" min="0" max="2" step="0.001" value="0.066" oninput="updateVal('rms',this.value)">
           <span id="v_rms">0.066</span>
         </div>
         <div class="slider-row">
-          <label data-tip="Asymmetry of the vibration waveform. Normal bearings: -0.5 to 0.5. Values far from 0 suggest uneven wear or imbalance.">skewness</label>
+          <label data-tip="Asymmetry of the vibration waveform.">skewness</label>
           <input type="range" id="s_skew" min="-3" max="3" step="0.01" value="-0.21" oninput="updateVal('skew',this.value)">
           <span id="v_skew">-0.21</span>
         </div>
         <div class="slider-row">
-          <label data-tip="Sharpness of vibration peaks. Normal: -0.5 to 0.5. HIGH kurtosis (>5) is the strongest indicator of bearing fault — cracks create sharp impulse spikes.">kurtosis</label>
+          <label data-tip="Sharpness of vibration peaks. HIGH kurtosis (>5) is the strongest indicator of bearing fault — cracks create sharp impulse spikes.">kurtosis</label>
           <input type="range" id="s_kurt" min="-5" max="30" step="0.01" value="-0.12" oninput="updateVal('kurt',this.value)">
           <span id="v_kurt">-0.12</span>
         </div>
         <div class="slider-row">
-          <label data-tip="Ratio of peak to RMS. Normal: 2.8–3.5. High crest factor means occasional sharp spikes relative to average — early fault indicator.">crest</label>
+          <label data-tip="Ratio of peak to RMS. High crest factor means occasional sharp spikes relative to average — early fault indicator.">crest</label>
           <input type="range" id="s_crest" min="0" max="10" step="0.01" value="3.10" oninput="updateVal('crest',this.value)">
           <span id="v_crest">3.10</span>
         </div>
         <div class="slider-row">
-          <label data-tip="Ratio of RMS to mean absolute value. Normal: 5–8. Deviations indicate changes in waveform shape caused by surface damage.">form</label>
+          <label data-tip="Ratio of RMS to mean absolute value. Deviations indicate changes in waveform shape caused by surface damage.">form</label>
           <input type="range" id="s_form" min="0" max="50" step="0.01" value="6.03" oninput="updateVal('form',this.value)">
           <span id="v_form">6.03</span>
         </div>
