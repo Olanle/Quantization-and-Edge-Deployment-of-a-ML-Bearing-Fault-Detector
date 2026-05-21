@@ -54,6 +54,27 @@
       width: 80px;
       font-size: 0.78rem;
       color: #8b949e;
+      cursor: help;
+      border-bottom: 1px dotted #444;
+      position: relative;
+    }
+    .slider-row label:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      left: 0;
+      top: 18px;
+      background: #1c2128;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      font-size: 0.7rem;
+      padding: 6px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      z-index: 100;
+      max-width: 240px;
+      white-space: normal;
+      width: 220px;
+      line-height: 1.4;
     }
     .slider-row input[type=range] {
       flex: 1;
@@ -196,6 +217,37 @@
       color: #8b949e;
       margin-bottom: 16px;
     }
+
+    /* ── ADDED: Quick Simulation styles ── */
+    .sim-box {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+    .sim-box .sim-title {
+      font-size: 0.75rem;
+      color: #58a6ff;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .sim-box .sim-desc {
+      font-size: 0.7rem;
+      color: #8b949e;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+    .sim-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: #8b949e;
+      margin-top: 4px;
+    }
+    .sim-labels span.fault-label { color: #f85149; }
+    .sim-labels span.normal-label { color: #3fb950; }
   </style>
 </head>
 <body>
@@ -220,48 +272,64 @@
 
       <!-- Slider Mode -->
       <div id="sliderMode">
+
+        <!-- ADDED: Quick Simulation -->
+        <div class="sim-box">
+          <div class="sim-title">⚡ Quick Simulation</div>
+          <div class="sim-desc">Not sure what values to enter? Drag this slider to simulate bearing health from normal operation to a severe fault. All 9 parameters update automatically.</div>
+          <input type="range" id="simSlider" min="0" max="100" step="1" value="0"
+            oninput="applySimulation(this.value)"
+            style="width:100%; accent-color:#58a6ff;">
+          <div class="sim-labels">
+            <span class="normal-label">◀ Normal</span>
+            <span id="simPct" style="color:#c9d1d9;">0%</span>
+            <span class="fault-label">Fault ▶</span>
+          </div>
+        </div>
+
+        <!-- Existing sliders with tooltips added to labels -->
         <div class="slider-row">
-          <label>max</label>
+          <label data-tip="Peak vibration amplitude. Normal bearings: 0.1–0.3. High values (>1.0) suggest impact events from fault.">max</label>
           <input type="range" id="s_max" min="-5" max="5" step="0.01" value="0.21" oninput="updateVal('max',this.value)">
           <span id="v_max">0.21</span>
         </div>
         <div class="slider-row">
-          <label>min</label>
+          <label data-tip="Lowest vibration amplitude recorded. Normal: -0.3 to -0.1. Large negatives indicate strong impact reversals.">min</label>
           <input type="range" id="s_min" min="-5" max="5" step="0.01" value="-0.20" oninput="updateVal('min',this.value)">
           <span id="v_min">-0.20</span>
         </div>
         <div class="slider-row">
-          <label>mean</label>
+          <label data-tip="Average vibration level over the measurement window. Healthy bearings: near 0. Drift indicates a bias or alignment issue.">mean</label>
           <input type="range" id="s_mean" min="-2" max="2" step="0.001" value="0.01" oninput="updateVal('mean',this.value)">
           <span id="v_mean">0.01</span>
         </div>
         <div class="slider-row">
-          <label>sd</label>
+          <label data-tip="Standard deviation — measures how much vibration varies. Normal: 0.05–0.09. Higher values mean more irregular vibration, a common fault indicator.">sd</label>
           <input type="range" id="s_sd" min="0" max="2" step="0.001" value="0.065" oninput="updateVal('sd',this.value)">
           <span id="v_sd">0.065</span>
         </div>
         <div class="slider-row">
-          <label>rms</label>
+          <label data-tip="Root Mean Square — overall energy of the vibration signal. Normal: 0.06–0.09. Rising RMS is an early warning of bearing wear.">rms</label>
           <input type="range" id="s_rms" min="0" max="2" step="0.001" value="0.066" oninput="updateVal('rms',this.value)">
           <span id="v_rms">0.066</span>
         </div>
         <div class="slider-row">
-          <label>skewness</label>
+          <label data-tip="Asymmetry of the vibration waveform. Normal bearings: -0.5 to 0.5. Values far from 0 suggest uneven wear or imbalance.">skewness</label>
           <input type="range" id="s_skew" min="-3" max="3" step="0.01" value="-0.21" oninput="updateVal('skew',this.value)">
           <span id="v_skew">-0.21</span>
         </div>
         <div class="slider-row">
-          <label>kurtosis</label>
+          <label data-tip="Sharpness of vibration peaks. Normal: -0.5 to 0.5. HIGH kurtosis (>5) is the strongest indicator of bearing fault — cracks create sharp impulse spikes.">kurtosis</label>
           <input type="range" id="s_kurt" min="-5" max="30" step="0.01" value="-0.12" oninput="updateVal('kurt',this.value)">
           <span id="v_kurt">-0.12</span>
         </div>
         <div class="slider-row">
-          <label>crest</label>
+          <label data-tip="Ratio of peak to RMS. Normal: 2.8–3.5. High crest factor means occasional sharp spikes relative to average — early fault indicator.">crest</label>
           <input type="range" id="s_crest" min="0" max="10" step="0.01" value="3.10" oninput="updateVal('crest',this.value)">
           <span id="v_crest">3.10</span>
         </div>
         <div class="slider-row">
-          <label>form</label>
+          <label data-tip="Ratio of RMS to mean absolute value. Normal: 5–8. Deviations indicate changes in waveform shape caused by surface damage.">form</label>
           <input type="range" id="s_form" min="0" max="50" step="0.01" value="6.03" oninput="updateVal('form',this.value)">
           <span id="v_form">6.03</span>
         </div>
@@ -270,7 +338,7 @@
         <button class="btn secondary" onclick="loadPreset('fault')">Load Fault Sample</button>
       </div>
 
-      <!-- Upload Mode -->
+      <!-- Upload Mode — unchanged -->
       <div id="uploadMode" style="display:none">
         <div class="upload-area" onclick="document.getElementById('fileInput').click()">
           <div class="icon">📂</div>
@@ -283,7 +351,7 @@
       </div>
     </div>
 
-    <!-- RIGHT PANEL: Results -->
+    <!-- RIGHT PANEL: Results — unchanged -->
     <div class="panel">
       <h2>Results</h2>
 
@@ -330,10 +398,9 @@
 
   <script>
     let session = null;
-    let threshold = 1.8; // default threshold from Project 6
+    let threshold = 1.8;
     let uploadedInput = null;
 
-    // Normal sample values (from CWRU normal bearing)
     const PRESETS = {
       normal: [4.13025, -0.25023, 0.073129, 0.90223, 0.54623, 2.54044, 1.80000, 4.06322, 0.82045],
       fault:  [2.75270, -2.86290, 0.014965, 0.418131, 0.418297, -0.553010, 12.676896, 6.580735, 27.951915]
@@ -341,6 +408,17 @@
 
     const FIELDS = ['max','min','mean','sd','rms','skew','kurt','crest','form'];
     const SLIDER_IDS = ['s_max','s_min','s_mean','s_sd','s_rms','s_skew','s_kurt','s_crest','s_form'];
+
+    // ADDED: Quick Simulation function
+    function applySimulation(pct) {
+      const t = pct / 100;
+      document.getElementById('simPct').textContent = pct + '%';
+      SLIDER_IDS.forEach((id, i) => {
+        const val = PRESETS.normal[i] + t * (PRESETS.fault[i] - PRESETS.normal[i]);
+        document.getElementById(id).value = val;
+        document.getElementById('v_' + FIELDS[i]).textContent = val.toFixed(3);
+      });
+    }
 
     async function loadModel() {
       try {
@@ -355,7 +433,6 @@
     }
 
     async function computeThreshold() {
-      // Use known threshold from Project 6 training
       threshold = 1.8;
       document.getElementById('metricThreshold').textContent = threshold.toFixed(4);
       document.getElementById('thresholdInfo').textContent =
@@ -396,7 +473,6 @@
       reader.onload = function(e) {
         const text = e.target.result.trim();
         const lines = text.split('\n');
-        // Take last non-empty line (skip header if present)
         let dataLine = lines[lines.length - 1];
         const values = dataLine.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
         if (values.length >= 9) {
@@ -434,7 +510,6 @@
       const output = results['output'].data;
       const input = inputTensor.data;
 
-      // Compute reconstruction error
       let error = 0;
       for (let i = 0; i < 9; i++) {
         error += (input[i] - output[i]) ** 2;
@@ -445,7 +520,6 @@
       const isAnomaly = error > threshold;
       const confidence = Math.min(100, (error / (threshold * 3)) * 100);
 
-      // Update result box
       const box = document.getElementById('resultBox');
       box.className = 'result-box ' + (isAnomaly ? 'anomaly' : 'normal');
       document.getElementById('resultLabel').textContent = isAnomaly ? 'ANOMALY' : 'NORMAL';
@@ -453,16 +527,13 @@
         ? 'Bearing fault detected — inspect immediately'
         : 'Bearing operating within normal parameters';
 
-      // Update metrics
       document.getElementById('metricError').textContent = error.toFixed(4);
       document.getElementById('metricLatency').textContent = latency + ' ms';
 
-      // Confidence bar
       const bar = document.getElementById('confBar');
       bar.style.width = Math.min(100, isAnomaly ? confidence : (100 - confidence)) + '%';
       bar.className = 'confidence-bar-fill ' + (isAnomaly ? 'anomaly-fill' : '');
 
-      // Log entry
       const log = document.getElementById('runLog');
       const time = new Date().toLocaleTimeString();
       const entry = document.createElement('div');
