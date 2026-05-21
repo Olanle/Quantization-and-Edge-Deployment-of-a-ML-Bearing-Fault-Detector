@@ -1,4 +1,4 @@
-# Project 7 — Quantization and Edge Deployment of a ML Bearing Fault Detector
+# Quantization and Edge Deployment of a ML Bearing Fault Detector
 
 Compressing and deploying a PyTorch autoencoder across multiple formats — ONNX, TFLite Float32, and TFLite INT8 — with a live browser-based inference app powered by ONNX Runtime Web.
 
